@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Galaxy Cyber Shooter</title>
+<style>
+  html,body{margin:0;height:100%;background:#02030a;overflow:hidden;
+    font-family:Tahoma,"Segoe UI",sans-serif;-webkit-user-select:none;user-select:none}
+  body{display:flex;align-items:center;justify-content:center}
+  #wrap{position:relative;flex:none;width:480px;height:720px;transform-origin:center center;
+    box-shadow:0 0 40px #00f0ff55,0 0 0 2px #00f0ff88;border-radius:8px;overflow:hidden}
+  #c{width:480px;height:720px;display:block;touch-action:none;background:#02030a}
+  #wrap::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:5;
+    background:repeating-linear-gradient(to bottom,rgba(0,240,255,.05) 0 1px,transparent 1px 3px)}
+  .hide{display:none!important}
+
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    z-index:2;color:#cfeaff;text-align:center}
+  h1{margin:0;font-size:36px;line-height:1.1;letter-spacing:2px;color:#00f0ff;
+    text-shadow:0 0 8px #00f0ff,0 0 22px #00f0ff,0 0 44px #ff2bd6}
+  p{margin:0;font-size:18px;line-height:1.6}
+  .tag{font-family:"Courier New",monospace;color:#ff2bd6;letter-spacing:4px;font-size:14px;
+    text-shadow:0 0 8px #ff2bd6;margin-bottom:8px}
+  .stack{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}
+
+  button{font-family:inherit;cursor:pointer;border:none}
+  button:active{transform:scale(.96)}
+  .big{font-size:24px;font-weight:bold;color:#02030a;background:#00f0ff;border-radius:14px;
+    padding:13px 0;width:300px;box-shadow:0 0 18px #00f0ff,0 0 40px #00f0ff88}
+  .big.mag{background:#ff2bd6;box-shadow:0 0 18px #ff2bd6,0 0 40px #ff2bd688}
+  .ghost{font-size:15px;color:#00f0ff;background:transparent;border:1px solid #00f0ff;
+    border-radius:10px;padding:7px 16px}
+  .pills{display:flex;gap:8px}
+  .pill{font-size:16px;font-weight:bold;color:#9fe8ff;background:#0b1d33;border:1px solid #00f0ff66;
+    border-radius:20px;padding:7px 18px}
+  .pill.on{color:#02030a;background:#9dff00;border-color:#9dff00;box-shadow:0 0 14px #9dff00aa}
+
+  #home{justify-content:space-between;padding:54px 24px 30px;
+    background:linear-gradient(rgba(2,3,10,.35),rgba(2,3,10,.05) 45%,rgba(2,3,10,.75))}
+  #end{justify-content:center;gap:14px;background:rgba(2,3,10,.85);padding:20px}
+
+  /* ---------- ห้องแต่งยาน ---------- */
+  #lab{justify-content:flex-start;gap:6px;padding:10px 14px;background:#04051a}
+  .labhead{font-size:20px;font-weight:bold;color:#00f0ff;text-shadow:0 0 10px #00f0ff}
+  .labhead small{display:block;font-size:13px;color:#8fb7d6;font-weight:normal;text-shadow:none}
+  #pv{width:440px;height:100px;border:1px solid #00f0ff66;border-radius:10px;background:#05061a}
+  .row{display:flex;align-items:center;gap:6px;width:440px;height:32px}
+  .row label{width:74px;text-align:left;font-size:14px;color:#8fb7d6;flex:none}
+  .chip{font-size:14px;color:#9fe8ff;background:#0b1d33;border:1px solid #00f0ff66;border-radius:9px;padding:5px 10px}
+  .sw{width:28px;height:28px;border-radius:50%;border:2px solid #ffffff55;padding:0}
+  #code{width:440px;height:160px;box-sizing:border-box;resize:none;background:#020410;color:#9dff00;
+    border:1px solid #00f0ff66;border-radius:10px;padding:8px;font:13px/1.45 "Courier New",monospace;
+    -webkit-user-select:text;user-select:text;outline:none}
+  #code:focus{border-color:#00f0ff;box-shadow:0 0 10px #00f0ff66}
+  #stat{width:440px;min-height:34px;font-size:13px;text-align:left;line-height:1.4}
+  .ok{color:#9dff00}.er{color:#ff6a6a}.wn{color:#ffd24d}
+  .labbtn{display:flex;gap:8px;width:440px}
+  .labbtn button{flex:1;font-size:16px;font-weight:bold;border-radius:12px;padding:11px 4px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c" width="480" height="720"></canvas>
+
+  <!-- หน้าหลัก -->
+  <div id="home" class="screen">
+    <div class="stack">
+      <div class="tag">// CYBER GALAXY //</div>
+      <h1>GALAXY<br>CYBER SHOOTER</h1>
+      <p id="pilot" style="font-size:22px;font-weight:bold;color:#9dff00"></p>
+      <p id="slog" style="font-size:15px;color:#8fb7d6"></p>
+    </div>
+    <div class="stack">
+      <p style="font-size:14px;color:#8fb7d6">ระดับความยาก</p>
+      <div class="pills" id="diffRow"></div>
+      <button class="big" id="btnPlay">▶ เริ่มเล่น</button>
+      <button class="big mag" id="btnLab">🧪 ห้องแต่งยาน (เขียนโค้ด)</button>
+      <div style="display:flex;gap:14px;align-items:center">
+        <span id="best" style="font-size:15px;color:#ffd24d"></span>
+        <button class="ghost" id="snd">เสียง: เปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ห้องแต่งยาน -->
+  <div id="lab" class="screen hide">
+    <div class="labhead">🧪 ห้องแต่งยาน<small>เขียนโค้ด HTML แต่งยาน! เปิด &lt;h1&gt; ต้องมีปิด &lt;/h1&gt;<br>&lt;h1&gt; ชื่อ · &lt;p&gt; คำพูด · &lt;ship&gt; ตัวยาน · &lt;gun&gt; ปืน · &lt;engine&gt; เครื่อง · &lt;heart&gt; หัวใจ</small></div>
+    <canvas id="pv" width="440" height="100"></canvas>
+    <div id="chips"></div>
+    <textarea id="code" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+    <div id="stat"></div>
+    <div class="labbtn">
+      <button class="ghost" id="labReset">↺ รีเซ็ต</button>
+      <button style="background:#ff2bd6;color:#02030a" id="labSave">💾 บันทึก</button>
+      <button style="background:#00f0ff;color:#02030a" id="labPlay">▶ ลองบิน</button>
+    </div>
+  </div>
+
+  <!-- จบเกม -->
+  <div id="end" class="screen hide">
+    <h1 id="endT"></h1>
+    <p id="endM"></p>
+    <button class="big" id="btnAgain">↻ เล่นอีกครั้ง</button>
+    <button class="big mag" id="btnHome">🏠 หน้าหลัก</button>
+  </div>
+</div>
+
+<script>
+/* =====================================================
+   ⚙️ ตั้งค่าเกม  — แก้ตัวเลขตรงนี้ได้เลย!
+   ===================================================== */
+const CONFIG = {
+  maxLives: 3,            // หัวใจสูงสุด (เริ่มเกม/เก็บหัวใจได้ไม่เกินนี้)
+  bulletSpeed: 10,        // ความเร็วกระสุนยาน
+  enemySpawnMs: 850,      // ศัตรูโผล่ทุกกี่ มิลลิวินาที (น้อย = ยาก)
+  enemySpeed: 1.7,        // ความเร็วศัตรู
+  enemyHP: 1,             // เลือดศัตรูธรรมดา
+  shooterHP: 2,           // เลือดศัตรูนักยิง
+  enemyFireMs: 2400,      // ศัตรูยิงสวนทุกกี่ มิลลิวินาที
+  enemyBulletSpeed: 3.0,  // ความเร็วกระสุนศัตรู
+  killsForBoss: 20,       // ล้มศัตรูกี่ตัวบอสถึงมา
+  bossHP: 40,             // เลือดบอส
+  bossFireMs: 1300,       // บอสยิงทุกกี่ มิลลิวินาที
+  bossBulletSpeed: 3.2,   // ความเร็วกระสุนบอส
+  itemDropChance: 0.28,   // โอกาสศัตรูทิ้งของ
+  powerMs: 8000,          // ยิงหลายทางนานกี่ มิลลิวินาที
+  shieldMs: 6000,         // โล่นานกี่ มิลลิวินาที
+  sound: true,
+  colors: {
+    drift:   '#ff2bd6',   // ศัตรูบินตรง
+    wave:    '#b36bff',   // ศัตรูบินส่าย
+    shooter: '#ff5a36',   // ศัตรูนักยิง
+    boss:    '#ff3b3b',
+    enemyBullet: '#ff6ad5',
+    bossBullet:  '#ff8a00'
+  },
+  text: {
+    warning: '⚠ บอสมาแล้ว! ⚠',
+    winTitle: 'ชนะแล้ว!<br>เก่งมาก 🏆',
+    loseTitle: 'ยานแตก!<br>ลองใหม่นะ'
+  }
+};
+
+/* ระดับความยาก (คูณกับค่าด้านบน) */
+const DIFFS = {
+  easy:   { name: 'ง่าย',   spd: 0.85, fire: 0.5, spawn: 1.2, boss: 0.7,  bspd: 0.85 },
+  normal: { name: 'ปกติ',   spd: 1,    fire: 1,   spawn: 1,   boss: 1,    bspd: 1 },
+  hard:   { name: 'ท้าทาย', spd: 1.25, fire: 1.5, spawn: 0.8, boss: 1.35, bspd: 1.2 }
+};
+
+/* ไอเท็มที่เก็บได้ — weight = โอกาสออก */
+const ITEMS = {
+  heart:  { label: '♥', color: '#ff4d8d', weight: 3, toast: 'หัวใจ +1' },
+  power:  { label: 'P', color: '#ffe600', weight: 4, toast: 'ยิงเพิ่ม!' },
+  shield: { label: 'S', color: '#4da6ff', weight: 4, toast: 'โล่ป้องกัน!' },
+  star:   { label: '★', color: '#ffd24d', weight: 4, toast: 'ดาว +50' },
+  bomb:   { label: 'B', color: '#ff8a00', weight: 2, toast: 'ระเบิด!' }
+};
+
+/* =====================================================
+   🧪 ระบบโค้ดแต่งยาน
+   ===================================================== */
+const DEFAULT_CODE = [
+  '<!-- 🚀 ห้องแต่งยาน: แต่งยานด้วยโค้ด HTML! ทุกแท็กต้องมีตัวปิด -->',
+  '<!-- shape: arrow delta wide round | สีพิมพ์ red, blue, ชมพู ก็ได้ -->',
+  '',
+  '<h1>นักบินน้อย</h1>',
+  '<p>พร้อมลุย!</p>',
+  '',
+  '<ship shape="arrow" color="#00f0ff" flame="#ff8a00"></ship>',
+  '<gun color="#9dff00" shots="1" delay="250"></gun>',
+  '<engine speed="6"></engine>',
+  '<heart>3</heart>'
+].join('\n');
+
+const DEFAULT_SHIP = { name: 'นักบินน้อย', slogan: 'พร้อมลุย!', shape: 'arrow', color: '#00f0ff',
+  bullet: '#9dff00', flame: '#ff8a00', shots: 1, speed: 6, fireDelay: 250, lives: 3 };
+
+const SHAPE_LIST = ['arrow', 'delta', 'wide', 'round'];
+/* แท็กที่ใช้ได้: text = ค่าที่เขียนข้างในแท็ก, attrs = ค่าที่เขียนในแท็กเปิด */
+const TAGS = {
+  h1:     { text: { key: 'name',   t: 'str', max: 12 } },
+  p:      { text: { key: 'slogan', t: 'str', max: 24 } },
+  ship:   { attrs: {
+            shape: { key: 'shape', t: 'enum', o: SHAPE_LIST },
+            color: { key: 'color', t: 'color' },
+            flame: { key: 'flame', t: 'color' } } },
+  gun:    { attrs: {
+            color: { key: 'bullet', t: 'color' },
+            shots: { key: 'shots', t: 'num', min: 1, max: 3, int: true },
+            delay: { key: 'fireDelay', t: 'num', min: 120, max: 500 } } },
+  engine: { attrs: { speed: { key: 'speed', t: 'num', min: 3, max: 9 } } },
+  heart:  { text: { key: 'lives', t: 'num', min: 1, max: CONFIG.maxLives, int: true } }
+};
+
+const COLOR_NAMES = {
+  red:'#ff3b3b', blue:'#3b8bff', green:'#2bff7a', yellow:'#ffe600', pink:'#ff2bd6',
+  purple:'#b36bff', orange:'#ff8a00', white:'#ffffff', cyan:'#00f0ff', lime:'#9dff00',
+  'แดง':'#ff3b3b', 'น้ำเงิน':'#3b8bff', 'ฟ้า':'#00f0ff', 'เขียว':'#2bff7a', 'เหลือง':'#ffe600',
+  'ชมพู':'#ff2bd6', 'ม่วง':'#b36bff', 'ส้ม':'#ff8a00', 'ขาว':'#ffffff'
+};
+function parseColor(v){
+  v = v.toLowerCase();
+  if(COLOR_NAMES[v]) return COLOR_NAMES[v];
+  if(/^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(v)){
+    if(v.length === 4) v = '#' + v[1]+v[1] + v[2]+v[2] + v[3]+v[3];
+    return v;
+  }
+  return null;
+}
+
+function checkVal(spec, val, where, line, msgs){
+  const pre = `บรรทัด ${line}: ${where} `;
+  if(spec.t === 'str'){
+    if(!val){ msgs.push({ c: 'wn', t: pre + 'ว่างเปล่า ใส่ข้อความข้างในด้วยนะ' }); return undefined; }
+    return val.slice(0, spec.max);
+  }
+  if(spec.t === 'enum'){
+    const v = val.toLowerCase();
+    if(spec.o.includes(v)) return v;
+    msgs.push({ c: 'er', t: pre + 'เลือกได้แค่ ' + spec.o.join(', ') }); return undefined;
+  }
+  if(spec.t === 'color'){
+    const c = parseColor(val);
+    if(c) return c;
+    msgs.push({ c: 'er', t: pre + 'สีไม่ถูก ลอง "#00f0ff" หรือ red' }); return undefined;
+  }
+  const x = Number(val);
+  if(val === '' || isNaN(x)){ msgs.push({ c: 'er', t: pre + 'ต้องเป็นตัวเลข' }); return undefined; }
+  const cl = Math.max(spec.min, Math.min(spec.max, x));
+  if(cl !== x) msgs.push({ c: 'wn', t: pre + `ปรับเป็น ${cl} (ใช้ได้ ${spec.min}-${spec.max})` });
+  return spec.int ? Math.round(cl) : cl;
+}
+
+/* แปลงโค้ด HTML เป็นค่ายาน (ปลอดภัย: ไม่รันโค้ดจริง แค่อ่านแท็กที่รู้จัก) */
+function parseShip(code){
+  const s = Object.assign({}, DEFAULT_SHIP), msgs = [];
+  const clean = code.replace(/<!--[\s\S]*?-->/g, m => m.replace(/[^\n]/g, ' '));   // ตัดคอมเมนต์ <!-- -->
+  const lineAt = i => clean.slice(0, i).split('\n').length;
+  const stack = [];
+  const er = (line, t) => msgs.push({ c: 'er', t: `บรรทัด ${line}: ${t}` });
+
+  function apply(el){
+    const T = TAGS[el.name];
+    if(T.text){
+      const v = checkVal(T.text, el.text.trim().replace(/\s+/g, ' '), `<${el.name}>`, el.line, msgs);
+      if(v !== undefined) s[T.text.key] = v;
+    }
+    const are = /([a-zA-Z]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"']+))/g;
+    let a;
+    while((a = are.exec(el.attrs))){
+      const an = a[1].toLowerCase();
+      const av = a[2] !== undefined ? a[2] : (a[3] !== undefined ? a[3] : a[4]);
+      const sp = T.attrs && T.attrs[an];
+      if(!sp){
+        er(el.line, `<${el.name}> ไม่มี "${an}" (ใช้ได้: ${T.attrs ? Object.keys(T.attrs).join(', ') : 'ไม่มี'})`);
+        continue;
+      }
+      const v = checkVal(sp, av.trim(), `<${el.name}> ${an}`, el.line, msgs);
+      if(v !== undefined) s[sp.key] = v;
+    }
+  }
+  function addText(txt){
+    if(!txt.trim()) return;
+    if(stack.length) stack[stack.length-1].text += txt;
+    else msgs.push({ c: 'wn', t: `ข้อความ "${txt.trim().slice(0, 14)}" อยู่นอกแท็ก ต้องใส่ไว้ในแท็กนะ` });
+  }
+
+  const re = /<\s*(\/?)\s*([^\s<>\/]*)([^<>]*)>/g;
+  let last = 0, m;
+  while((m = re.exec(clean))){
+    addText(clean.slice(last, m.index)); last = re.lastIndex;
+    const line = lineAt(m.index), closing = m[1] === '/', name = m[2].toLowerCase();
+    let rest = m[3];
+    const selfClose = /\/\s*$/.test(rest); if(selfClose) rest = rest.replace(/\/\s*$/, '');
+    if(!name){ er(line, 'แท็กว่างเปล่า'); continue; }
+    if(!TAGS[name]){ if(!closing) er(line, `ไม่รู้จักแท็ก <${name}>`); continue; }
+    if(closing){
+      const top = stack.pop();
+      if(!top) er(line, `</${name}> ไม่มี <${name}> เปิดไว้`);
+      else if(top.name !== name){ er(line, `เจอ </${name}> แต่ต้องปิด </${top.name}> ก่อน`); stack.push(top); }
+      else apply(top);
+    } else {
+      const el = { name, line, attrs: rest, text: '' };
+      if(selfClose) apply(el); else stack.push(el);
+    }
+  }
+  const tail = clean.slice(last);
+  if(tail.includes('<')) er(lineAt(last + tail.indexOf('<')), 'มี < แต่ลืมปิดด้วย >');
+  addText(tail.replace(/<[\s\S]*$/, ''));
+  stack.forEach(el => er(el.line, `<${el.name}> ลืมปิดด้วย </${el.name}>`));
+  return { ship: s, msgs };
+}
+
+/* =====================================================
+   🎮 ตัวเกม
+   ===================================================== */
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const W = 480, H = 720;
+const wrap = document.getElementById('wrap');
+const $ = id => document.getElementById(id);
+function fit(){ wrap.style.transform = `scale(${Math.min(innerWidth/W, innerHeight/H)})`; }
+addEventListener('resize', fit); fit();
+
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v === null ? d : v; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+};
+
+let ship = parseShip(store.get('gcs_code2', DEFAULT_CODE)).ship;
+let diff = store.get('gcs_diff', 'normal'); if(!DIFFS[diff]) diff = 'normal';
+let best = parseInt(store.get('gcs_best', '0')) || 0;
+const D = () => DIFFS[diff];
+
+/* ---------- เสียง ---------- */
+let AC;
+function beep(f, d=0.08, type='square', v=0.04){
+  if(!CONFIG.sound) return;
+  try{
+    AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.value = f; g.gain.value = v;
+    g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + d);
+    o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime + d);
+  }catch(e){}
+}
+$('snd').onclick = () => { CONFIG.sound = !CONFIG.sound; $('snd').textContent = 'เสียง: ' + (CONFIG.sound ? 'เปิด' : 'ปิด'); beep(700); };
+
+/* ---------- ตัวควบคุม ---------- */
+let tx = W/2, ty = H-120;
+function pp(e){
+  if(state !== 'play') return;
+  const r = cv.getBoundingClientRect();
+  tx = (e.clientX - r.left) * W / r.width;
+  ty = (e.clientY - r.top) * H / r.height - (e.pointerType === 'touch' ? 70 : 0);
+}
+cv.addEventListener('pointerdown', e => { pp(e); try{cv.setPointerCapture(e.pointerId);}catch(_){} });
+cv.addEventListener('pointermove', pp);
+const keys = {};
+addEventListener('keydown', e => {
+  if(e.target && e.target.tagName === 'TEXTAREA') return;
+  const k = e.key.toLowerCase(); keys[k] = true;
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  if(k === 'enter' && (state === 'menu' || state === 'over' || state === 'win')) startGame();
+});
+addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+/* ---------- ตัวแปรเกม ---------- */
+let state = 'menu', last = 0;
+let p, bullets, ebullets, enemies, items, parts, toasts, boss;
+let score, kills, spawnT, bossStarted, warnT, winT, shake, flash;
+
+const stars = Array.from({length: 70}, () => ({ x: Math.random()*W, y: Math.random()*H, z: 0.3 + Math.random()*1.7 }));
+let gridOff = 0;
+
+function reset(){
+  p = { x: W/2, y: H-120, r: 14, fire: 0, power: 0, shield: 0, inv: 0, lives: ship.lives };
+  tx = p.x; ty = p.y;
+  bullets = []; ebullets = []; enemies = []; items = []; parts = []; toasts = [];
+  boss = null; score = 0; kills = 0; spawnT = 700;
+  bossStarted = false; warnT = 0; winT = 0; shake = 0; flash = 0;
+}
+reset();
+
+/* ---------- สลับหน้าจอ ---------- */
+function show(id){ ['home','lab','end'].forEach(x => $(x).classList.toggle('hide', x !== id)); }
+function refreshHome(){
+  $('pilot').textContent = '🚀 ' + ship.name; $('slog').textContent = ship.slogan;
+  $('best').textContent = '🏆 คะแนนสูงสุด ' + best;
+  document.querySelectorAll('#diffRow .pill').forEach(b => b.classList.toggle('on', b.dataset.d === diff));
+}
+function goHome(){ state = 'menu'; reset(); show('home'); refreshHome(); }
+function startGame(){
+  reset(); state = 'play'; show(null); toast(W/2, H-200, ship.slogan, '#9dff00');
+  beep(520, .1); setTimeout(() => beep(780, .15), 90);
+}
+function showEnd(win){
+  state = win ? 'win' : 'over';
+  let extra = '';
+  if(score > best){ best = score; store.set('gcs_best', String(best)); extra = '<br>🎉 คะแนนสูงสุดใหม่!'; }
+  $('endT').innerHTML = win ? CONFIG.text.winTitle : CONFIG.text.loseTitle;
+  $('endM').innerHTML = `คะแนน: <b>${score}</b>${extra}<br>ระดับ: ${D().name}`;
+  show('end');
+}
+Object.keys(DIFFS).forEach(k => {
+  const b = document.createElement('button'); b.className = 'pill'; b.dataset.d = k; b.textContent = DIFFS[k].name;
+  b.onclick = () => { diff = k; store.set('gcs_diff', k); refreshHome(); beep(600, .05); };
+  $('diffRow').appendChild(b);
+});
+$('btnPlay').onclick = startGame;
+$('btnAgain').onclick = startGame;
+$('btnHome').onclick = goHome;
+$('btnLab').onclick = openLab;
+
+/* ---------- ห้องแต่งยาน (หน้าจอ) ---------- */
+let labShip = ship;
+const pv = $('pv'), pvx = pv.getContext('2d');
+const SW = ['#00f0ff','#9dff00','#ff2bd6','#ffe600','#ff8a00','#ff3b3b','#ffffff','#b36bff'];
+const ROWS = [
+  { l: 'รูปทรง',    tag: 'ship',   attr: 'shape', o: [['ลูกศร','arrow'],['สามเหลี่ยม','delta'],['ปีกกว้าง','wide'],['กลม','round']] },
+  { l: 'สียาน',     tag: 'ship',   attr: 'color', sw: 1 },
+  { l: 'สีกระสุน',  tag: 'gun',    attr: 'color', sw: 1 },
+  { l: 'ยิงกี่ทาง', tag: 'gun',    attr: 'shots', o: [['1 ทาง','1'],['2 ทาง','2'],['3 ทาง','3']] },
+  { l: 'ความเร็ว',  tag: 'engine', attr: 'speed', o: [['ช้า','4'],['กลาง','6'],['เร็ว','8']] },
+  { l: 'ยิงถี่',     tag: 'gun',    attr: 'delay', o: [['ช้า','350'],['กลาง','250'],['ถี่','160']] },
+  { l: 'หัวใจ',     tag: 'heart',  text: 1, o: [['1 ดวง','1'],['2 ดวง','2'],['3 ดวง','3']] }
+];
+/* แก้ค่า attribute ในแท็กเปิด เช่น <ship color="..."> */
+function setAttr(tag, attr, val){
+  const ta = $('code'); let code = ta.value;
+  const re = new RegExp('<' + tag + '(\\s[^<>]*)?>', 'i');
+  const m = code.match(re);
+  if(!m){ code += `\n<${tag} ${attr}="${val}"></${tag}>`; }
+  else {
+    let attrs = m[1] || '';
+    const self = /\/\s*$/.test(attrs); attrs = attrs.replace(/\/\s*$/, '');
+    const are = new RegExp('(^|\\s)' + attr + '\\s*=\\s*("[^"]*"|\'[^\']*\'|[^\\s"\']+)', 'i');
+    if(are.test(attrs)) attrs = attrs.replace(are, (x, sp) => `${sp}${attr}="${val}"`);
+    else attrs = attrs.replace(/\s+$/, '') + ` ${attr}="${val}"`;
+    code = code.replace(re, () => `<${tag}${attrs}${self ? ' /' : ''}>`);
+  }
+  ta.value = code; labUpdate(); beep(700, .05);
+}
+/* แก้ข้อความระหว่างแท็ก เช่น <heart>3</heart> */
+function setText(tag, val){
+  const ta = $('code');
+  const re = new RegExp('(<' + tag + '(?:\\s[^<>]*)?>)([\\s\\S]*?)(</' + tag + '\\s*>)', 'i');
+  if(re.test(ta.value)) ta.value = ta.value.replace(re, (x, a, b, c) => a + val + c);
+  else ta.value += `\n<${tag}>${val}</${tag}>`;
+  labUpdate(); beep(700, .05);
+}
+(function buildChips(){
+  const box = $('chips');
+  ROWS.forEach(r => {
+    const act = v => r.text ? setText(r.tag, v) : setAttr(r.tag, r.attr, v);
+    const row = document.createElement('div'); row.className = 'row';
+    const lb = document.createElement('label'); lb.textContent = r.l; row.appendChild(lb);
+    if(r.sw){
+      SW.forEach(c => {
+        const b = document.createElement('button'); b.className = 'sw'; b.style.background = c;
+        b.style.boxShadow = `0 0 8px ${c}`; b.onclick = () => act(c); row.appendChild(b);
+      });
+    } else {
+      r.o.forEach(([t, v]) => {
+        const b = document.createElement('button'); b.className = 'chip'; b.textContent = t;
+        b.onclick = () => act(v); row.appendChild(b);
+      });
+    }
+    box.appendChild(row);
+  });
+})();
+function labUpdate(){
+  const r = parseShip($('code').value); labShip = r.ship;
+  const st = $('stat'); st.textContent = '';
+  const add = (cls, text) => { const d = document.createElement('div'); d.className = cls; d.textContent = text; st.appendChild(d); };
+  if(!r.msgs.length) add('ok', '✔ โค้ดถูกต้อง! ยานพร้อมบิน');
+  else r.msgs.slice(0, 3).forEach(m => add(m.c, (m.c === 'er' ? '✖ ' : '⚠ ') + m.t));
+}
+function openLab(){
+  state = 'lab'; $('code').value = store.get('gcs_code2', DEFAULT_CODE); labUpdate(); show('lab');
+}
+function saveLab(){
+  store.set('gcs_code2', $('code').value); ship = parseShip($('code').value).ship;
+}
+$('code').addEventListener('input', labUpdate);
+$('labReset').onclick = () => { $('code').value = DEFAULT_CODE; labUpdate(); };
+$('labSave').onclick = () => { saveLab(); beep(900, .1, 'triangle', .06); goHome(); };
+$('labPlay').onclick = () => { saveLab(); startGame(); };
+
+/* ---------- ตัวช่วย ---------- */
+const rand = (a, b) => a + Math.random()*(b-a);
+const near = (a, b, r) => (a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y) < r*r;
+function boom(x, y, color, n=14){
+  for(let i=0;i<n;i++){
+    const a = Math.random()*6.283, s = rand(1, 5);
+    parts.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, life: rand(300, 700), max: 700, color });
+  }
+}
+function toast(x, y, text, color='#fff'){ toasts.push({ x, y, text, color, life: 1000 }); }
+
+/* ---------- ยิง ---------- */
+function shotPattern(n){
+  if(n <= 1) return [{ ox: 0, vx: 0 }];
+  if(n === 2) return [{ ox: -7, vx: 0 }, { ox: 7, vx: 0 }];
+  if(n === 3) return [{ ox: 0, vx: 0 }, { ox: -8, vx: -2 }, { ox: 8, vx: 2 }];
+  return [{ ox: 0, vx: 0 }, { ox: -8, vx: -1.5 }, { ox: 8, vx: 1.5 }, { ox: -12, vx: -3 }, { ox: 12, vx: 3 }];
+}
+function shoot(){
+  const n = p.power > 0 ? (ship.shots >= 3 ? 5 : 3) : ship.shots;
+  shotPattern(n).forEach(g => bullets.push({ x: p.x + g.ox, y: p.y - 16, vx: g.vx, vy: -CONFIG.bulletSpeed }));
+}
+function enemyShoot(e, aimed){
+  const sp = CONFIG.enemyBulletSpeed * D().bspd;
+  let a = Math.PI/2;
+  if(aimed) a = Math.atan2(p.y - e.y, p.x - e.x) + rand(-0.12, 0.12);
+  ebullets.push({ x: e.x, y: e.y + 14, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, c: CONFIG.colors.enemyBullet, r: 5 });
+  beep(200, .06, 'square', .02);
+}
+
+/* ---------- ศัตรู / บอส / ไอเท็ม ---------- */
+function spawnEnemy(){
+  const r = Math.random();
+  let type = r < 0.35 ? 'drift' : (r < 0.7 ? 'wave' : 'shooter');
+  if(kills < 4 && type === 'shooter') type = 'wave';
+  const x = rand(60, W-60);
+  const fireIv = CONFIG.enemyFireMs / D().fire;
+  enemies.push({
+    type, x, x0: x, y: -30, r: type === 'shooter' ? 22 : 18,
+    hp: type === 'shooter' ? CONFIG.shooterHP : CONFIG.enemyHP,
+    vy: CONFIG.enemySpeed * D().spd * rand(0.8, 1.3),
+    ph: rand(0, 6), age: 0, hit: 0, hold: rand(90, 230),
+    fireT: rand(900, fireIv), fireIv: type === 'shooter' ? fireIv : fireIv * 1.5
+  });
+}
+function spawnBoss(){
+  const hp = Math.round(CONFIG.bossHP * D().boss);
+  boss = { x: W/2, y: -80, w: 130, h: 80, hp, max: hp, dir: 1, fire: 1200, t: 0, rage: false, volley: 0 };
+}
+function bossFire(){
+  const sp = CONFIG.bossBulletSpeed * D().bspd;
+  const fan = boss.rage ? [-0.6, -0.3, 0, 0.3, 0.6] : [-0.35, 0, 0.35];
+  fan.forEach(a => ebullets.push({ x: boss.x, y: boss.y + 40, vx: Math.sin(a)*sp, vy: Math.cos(a)*sp, c: CONFIG.colors.bossBullet, r: 6 }));
+  if(boss.rage && boss.volley % 2 === 0){
+    const a = Math.atan2(p.y - boss.y, p.x - boss.x);
+    ebullets.push({ x: boss.x, y: boss.y + 30, vx: Math.cos(a)*sp*1.15, vy: Math.sin(a)*sp*1.15, c: '#ff3b3b', r: 6 });
+  }
+  boss.volley++; beep(300, .12, 'square', .04);
+}
+function dropItem(x, y){
+  const types = Object.keys(ITEMS);
+  let total = 0; types.forEach(t => total += ITEMS[t].weight);
+  let r = Math.random() * total, pick = types[0];
+  for(const t of types){ r -= ITEMS[t].weight; if(r <= 0){ pick = t; break; } }
+  items.push({ x, y, type: pick, vy: 1.6, r: 16, t: 0 });
+}
+function collect(it){
+  const d = ITEMS[it.type];
+  toast(it.x, it.y, d.toast, d.color);
+  beep(900, .1, 'triangle', .06); setTimeout(() => beep(1300, .1, 'triangle', .06), 70);
+  if(it.type === 'heart')  p.lives = Math.min(CONFIG.maxLives, p.lives + 1);
+  if(it.type === 'power')  p.power = CONFIG.powerMs;
+  if(it.type === 'shield') p.shield = CONFIG.shieldMs;
+  if(it.type === 'star')   score += 50;
+  if(it.type === 'bomb'){
+    flash = 1; shake = 12;
+    enemies.forEach(e => { boom(e.x, e.y, CONFIG.colors[e.type]); score += 10; kills++; });
+    enemies = []; ebullets = [];
+    if(boss) boss.hp -= 5;
+    beep(120, .4, 'sawtooth', .08);
+  }
+}
+function hurt(){
+  if(p.shield > 0 || p.inv > 0 || state !== 'play') return;
+  p.lives--; p.inv = 1500; shake = 10;
+  boom(p.x, p.y, ship.color, 20);
+  beep(150, .25, 'sawtooth', .07);
+  if(p.lives <= 0){
+    state = 'dying'; boom(p.x, p.y, '#fff', 40);
+    setTimeout(() => showEnd(false), 900);
+  }
+}
+
+/* ---------- อัปเดต ---------- */
+function update(dt){
+  const k = dt/16.67;
+  stars.forEach(s => { s.y += s.z * 1.2 * k; if(s.y > H){ s.y = 0; s.x = Math.random()*W; } });
+  gridOff = (gridOff + 1.5*k) % 40;
+  parts.forEach(q => { q.x += q.vx*k; q.y += q.vy*k; q.life -= dt; });
+  parts = parts.filter(q => q.life > 0);
+  toasts.forEach(t => { t.y -= 0.6*k; t.life -= dt; });
+  toasts = toasts.filter(t => t.life > 0);
+  shake = Math.max(0, shake - 0.6*k); flash = Math.max(0, flash - 0.04*k);
+
+  if(state !== 'play') return;
+
+  /* ยาน */
+  let dx = 0, dy = 0;
+  if(keys['arrowleft'] || keys['a']) dx -= 1;
+  if(keys['arrowright'] || keys['d']) dx += 1;
+  if(keys['arrowup'] || keys['w']) dy -= 1;
+  if(keys['arrowdown'] || keys['s']) dy += 1;
+  if(dx || dy){ p.x += dx*ship.speed*k; p.y += dy*ship.speed*k; tx = p.x; ty = p.y; }
+  else {
+    const f = Math.min(1, (0.1 + ship.speed*0.028) * k);
+    p.x += (tx - p.x) * f; p.y += (ty - p.y) * f;
+  }
+  p.x = Math.max(20, Math.min(W-20, p.x)); p.y = Math.max(80, Math.min(H-30, p.y));
+  p.fire -= dt;
+  if(p.fire <= 0){ shoot(); p.fire = ship.fireDelay * (1 + 0.15*(ship.shots-1)); }
+  p.power = Math.max(0, p.power - dt); p.shield = Math.max(0, p.shield - dt); p.inv = Math.max(0, p.inv - dt);
+
+  /* ศัตรูมาเรื่อยๆ (ยิ่งเล่นยิ่งมาถี่) */
+  if(!bossStarted){
+    spawnT -= dt;
+    if(spawnT <= 0){
+      spawnEnemy();
+      spawnT = CONFIG.enemySpawnMs * D().spawn * rand(0.8, 1.2) * (1 - Math.min(0.35, kills*0.012));
+    }
+  }
+  if(!bossStarted && kills >= CONFIG.killsForBoss){ bossStarted = true; warnT = 2200; beep(200, .5, 'sawtooth', .07); }
+  if(warnT > 0){ warnT -= dt; if(warnT <= 0) spawnBoss(); }
+
+  /* กระสุนเรา */
+  bullets.forEach(b => { b.x += b.vx*k; b.y += b.vy*k; });
+  bullets = bullets.filter(b => b.y > -20 && b.x > -20 && b.x < W+20);
+
+  /* ศัตรู */
+  enemies.forEach(e => {
+    e.age += dt; e.hit = Math.max(0, e.hit - dt);
+    const leaving = e.type === 'shooter' && e.age > 7000;
+    if(e.type === 'shooter'){
+      if(leaving) e.y += e.vy*1.6*k;
+      else if(e.y < e.hold) e.y += e.vy*1.3*k;
+      else { e.ph += 0.025*k; e.x = Math.max(40, Math.min(W-40, e.x0 + Math.sin(e.ph)*70)); }
+    } else {
+      e.y += e.vy*k;
+      if(e.type === 'wave'){ e.ph += 0.04*k; e.x = e.x0 + Math.sin(e.ph)*45; }
+    }
+    if(e.type !== 'drift' && !leaving && e.y > 20 && e.y < H-150){
+      e.fireT -= dt;
+      if(e.fireT <= 0){ e.fireT = e.fireIv * rand(0.8, 1.2); enemyShoot(e, e.type === 'shooter'); }
+    }
+    bullets.forEach(b => {
+      if(!b.dead && !e.dead && near(b, e, e.r + 6)){
+        b.dead = true; e.hp--; e.hit = 80; beep(600, .04, 'square', .03);
+        if(e.hp <= 0){
+          e.dead = true; score += e.type === 'shooter' ? 25 : (e.type === 'wave' ? 15 : 10); kills++;
+          boom(e.x, e.y, CONFIG.colors[e.type]);
+          beep(240, .12, 'sawtooth', .05);
+          if(Math.random() < CONFIG.itemDropChance) dropItem(e.x, e.y);
+        }
+      }
+    });
+    if(!e.dead && near(e, p, e.r + p.r)){ e.dead = true; boom(e.x, e.y, CONFIG.colors[e.type]); hurt(); }
+  });
+  enemies = enemies.filter(e => !e.dead && e.y < H+40);
+
+  /* บอส */
+  if(boss){
+    boss.t += dt;
+    if(!boss.rage && boss.hp <= boss.max/2){
+      boss.rage = true; shake = 14; flash = 0.6; toast(boss.x, boss.y + 70, 'บอสโกรธแล้ว!', '#ff3b3b');
+      beep(110, .5, 'sawtooth', .08);
+    }
+    if(boss.y < 120) boss.y += 1.5*k;
+    else {
+      boss.x += boss.dir * (boss.rage ? 2.6 : 1.7) * k;
+      if(boss.x > W-85) boss.dir = -1;
+      if(boss.x < 85) boss.dir = 1;
+      boss.fire -= dt;
+      if(boss.fire <= 0){
+        boss.fire = CONFIG.bossFireMs / (0.6 + 0.4*D().fire) * (boss.rage ? 0.65 : 1);
+        bossFire();
+      }
+    }
+    bullets.forEach(b => {
+      if(!b.dead && Math.abs(b.x-boss.x) < boss.w/2 && Math.abs(b.y-boss.y) < boss.h/2){
+        b.dead = true; boss.hp--; boom(b.x, b.y, '#fff', 3); beep(420, .04, 'square', .03);
+      }
+    });
+    if(Math.abs(p.x-boss.x) < boss.w/2 + 8 && Math.abs(p.y-boss.y) < boss.h/2 + 8) hurt();
+    if(boss.hp <= 0){
+      score += 200; boom(boss.x, boss.y, CONFIG.colors.boss, 80); boom(boss.x, boss.y, '#fff', 40);
+      shake = 20; flash = 1; beep(100, .8, 'sawtooth', .09);
+      boss = null; ebullets = []; enemies = []; winT = 1600;
+    }
+  }
+  bullets = bullets.filter(b => !b.dead);
+  if(winT > 0){ winT -= dt; if(winT <= 0) showEnd(true); }
+
+  /* กระสุนศัตรู / บอส */
+  ebullets.forEach(b => { b.x += b.vx*k; b.y += b.vy*k; if(near(b, p, 13)){ b.dead = true; hurt(); } });
+  ebullets = ebullets.filter(b => !b.dead && b.y < H+20 && b.y > -30 && b.x > -20 && b.x < W+20);
+
+  /* ไอเท็ม */
+  items.forEach(it => { it.y += it.vy*k; it.t += dt; if(near(it, p, it.r + 18)){ it.dead = true; collect(it); } });
+  items = items.filter(it => !it.dead && it.y < H+30);
+}
+
+/* ---------- วาด ---------- */
+function glowC(c, col, b=12){ c.shadowColor = col; c.shadowBlur = b; c.strokeStyle = col; }
+function glow(col, b){ glowC(ctx, col, b); }
+
+const SHAPES = {
+  arrow: [[0,-24],[15,14],[7,9],[0,16],[-7,9],[-15,14]],
+  delta: [[0,-22],[20,16],[0,8],[-20,16]],
+  wide:  [[0,-20],[8,-8],[24,8],[22,16],[8,10],[0,14],[-8,10],[-22,16],[-24,8],[-8,-8]],
+  round: [[0,-22],[10,-16],[14,-2],[12,12],[5,16],[-5,16],[-12,12],[-14,-2],[-10,-16]]
+};
+function paintShip(c, x, y, s, shield){
+  c.save(); c.translate(x, y);
+  const fl = 8 + Math.random()*8;
+  c.fillStyle = s.flame; c.shadowColor = s.flame; c.shadowBlur = 14;
+  c.beginPath(); c.moveTo(-6, 10); c.lineTo(0, 10 + fl); c.lineTo(6, 10); c.fill();
+  glowC(c, s.color, 16); c.lineWidth = 2.5; c.fillStyle = '#031a24';
+  c.beginPath();
+  SHAPES[s.shape].forEach((q, i) => i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]));
+  c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = s.color; c.beginPath(); c.arc(0, -2, 4, 0, 6.283); c.fill();
+  if(shield > 0){
+    c.globalAlpha = shield < 1500 ? (Math.floor(shield/150) % 2 ? 0.3 : 1) : 1;
+    glowC(c, '#4da6ff', 18); c.lineWidth = 3;
+    c.beginPath(); c.arc(0, 0, 28, 0, 6.283); c.stroke();
+  }
+  c.restore();
+}
+
+function drawBG(){
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#02030a'); g.addColorStop(1, '#14033a');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.globalAlpha = 0.18; ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 1;
+  for(let y = gridOff; y < H; y += 40){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  for(let x = 0; x <= W; x += 40){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  ctx.restore();
+  stars.forEach(s => { ctx.fillStyle = `rgba(200,240,255,${0.25 + s.z*0.35})`; ctx.fillRect(s.x, s.y, s.z*1.5, s.z*1.5); });
+}
+
+function drawPlayer(){
+  if(state === 'dying') return;
+  if(p.inv > 0 && Math.floor(p.inv/100) % 2 === 0) return;
+  paintShip(ctx, p.x, p.y, ship, p.shield);
+}
+
+function drawEnemy(e){
+  const col = CONFIG.colors[e.type];
+  ctx.save(); ctx.translate(e.x, e.y);
+  glow(col, 14); ctx.lineWidth = 2.5; ctx.fillStyle = e.hit > 0 ? '#ffffff' : '#1a0518';
+  ctx.beginPath();
+  if(e.type === 'drift'){
+    ctx.moveTo(0, 20); ctx.lineTo(18, 0); ctx.lineTo(10, -16); ctx.lineTo(-10, -16); ctx.lineTo(-18, 0);
+  } else if(e.type === 'wave'){
+    ctx.moveTo(0, 18); ctx.lineTo(20, 2); ctx.lineTo(0, -18); ctx.lineTo(-20, 2);
+  } else {
+    for(let i=0;i<8;i++){ const a = i*Math.PI/4 + Math.PI/8; ctx.lineTo(Math.cos(a)*22, Math.sin(a)*22); }
+  }
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = col;
+  if(e.type === 'shooter'){ ctx.fillRect(-4, 14, 8, 12); ctx.fillRect(-9, -5, 18, 7); }
+  else { ctx.fillRect(-8, -3, 5, 5); ctx.fillRect(3, -3, 5, 5); }
+  ctx.restore();
+}
+
+function drawBoss(){
+  const b = boss, c = CONFIG.colors.boss;
+  ctx.save(); ctx.translate(b.x, b.y);
+  glow(c, b.rage ? 30 : 20); ctx.lineWidth = 3; ctx.fillStyle = b.rage ? '#3a0a0a' : '#240606';
+  ctx.beginPath();
+  ctx.moveTo(-65, -20); ctx.lineTo(-35, -40); ctx.lineTo(35, -40); ctx.lineTo(65, -20);
+  ctx.lineTo(45, 20); ctx.lineTo(15, 40); ctx.lineTo(-15, 40); ctx.lineTo(-45, 20); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  const pulse = 8 + Math.sin(b.t/(b.rage ? 80 : 150))*3;
+  ctx.fillStyle = '#fff'; ctx.shadowColor = c; ctx.shadowBlur = 25;
+  ctx.beginPath(); ctx.arc(0, 0, pulse, 0, 6.283); ctx.fill();
+  ctx.fillStyle = c; ctx.fillRect(-45, -6, 14, 8); ctx.fillRect(31, -6, 14, 8);
+  ctx.restore();
+}
+
+function drawItem(it){
+  const d = ITEMS[it.type];
+  ctx.save(); ctx.translate(it.x, it.y + Math.sin(it.t/200)*3);
+  glow(d.color, 16); ctx.lineWidth = 2.5; ctx.fillStyle = '#0a0a1c';
+  ctx.beginPath();
+  for(let i=0;i<6;i++){ const a = i*Math.PI/3 + Math.PI/6; ctx.lineTo(Math.cos(a)*17, Math.sin(a)*17); }
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.shadowBlur = 0; ctx.fillStyle = d.color; ctx.font = 'bold 18px Tahoma,sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(d.label, 0, 1);
+  ctx.restore();
+}
+
+function drawHUD(){
+  ctx.save(); ctx.textBaseline = 'top';
+  ctx.shadowColor = '#00f0ff'; ctx.shadowBlur = 8; ctx.fillStyle = '#00f0ff';
+  ctx.font = 'bold 22px "Courier New",monospace'; ctx.textAlign = 'left';
+  ctx.fillText('SCORE ' + score, 12, 10);
+  ctx.textAlign = 'right'; ctx.fillStyle = '#ff4d8d'; ctx.shadowColor = '#ff4d8d';
+  ctx.fillText('♥'.repeat(Math.max(0, p.lives)), W-12, 10);
+  ctx.shadowBlur = 0;
+  if(!bossStarted){
+    ctx.textAlign = 'left'; ctx.font = 'bold 13px Tahoma'; ctx.fillStyle = '#8fb7d6';
+    ctx.fillText('ศัตรู ' + Math.min(kills, CONFIG.killsForBoss) + '/' + CONFIG.killsForBoss + ' → บอส', 12, 38);
+  }
+  let y = H - 22; ctx.textAlign = 'left'; ctx.font = 'bold 13px Tahoma';
+  [['P  ยิงเพิ่ม', p.power, CONFIG.powerMs, '#ffe600'], ['S  โล่', p.shield, CONFIG.shieldMs, '#4da6ff']].forEach(([n, v, m, c]) => {
+    if(v > 0){
+      ctx.fillStyle = c; ctx.fillText(n, 12, y - 14);
+      ctx.fillStyle = '#ffffff22'; ctx.fillRect(110, y - 12, 120, 8);
+      ctx.fillStyle = c; ctx.fillRect(110, y - 12, 120 * v / m, 8);
+      y -= 24;
+    }
+  });
+  if(boss){
+    ctx.fillStyle = '#ffffff22'; ctx.fillRect(90, 46, 300, 12);
+    ctx.fillStyle = CONFIG.colors.boss; ctx.shadowColor = CONFIG.colors.boss; ctx.shadowBlur = 10;
+    ctx.fillRect(90, 46, 300 * Math.max(0, boss.hp) / boss.max, 12);
+    ctx.shadowBlur = 0; ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Tahoma'; ctx.textAlign = 'center';
+    ctx.fillText('BOSS', W/2, 62);
+  }
+  if(warnT > 0 && Math.floor(warnT/250) % 2 === 0){
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 36px Tahoma';
+    ctx.fillStyle = '#ff3b3b'; ctx.shadowColor = '#ff3b3b'; ctx.shadowBlur = 24;
+    ctx.fillText(CONFIG.text.warning, W/2, H/2 - 40);
+  }
+  ctx.restore();
+}
+
+function draw(){
+  ctx.save();
+  if(shake > 0) ctx.translate(rand(-shake, shake)/2, rand(-shake, shake)/2);
+  drawBG();
+  if(state === 'menu'){
+    paintShip(ctx, W/2 + Math.sin(performance.now()/600)*60, 330, ship, 0);
+  } else {
+    items.forEach(drawItem);
+    enemies.forEach(drawEnemy);
+    if(boss) drawBoss();
+    ctx.save();
+    glow(ship.bullet, 10); ctx.fillStyle = ship.bullet;
+    bullets.forEach(b => ctx.fillRect(b.x-2, b.y-8, 4, 14));
+    ebullets.forEach(b => {
+      glow(b.c, 12); ctx.fillStyle = b.c; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 6.283); ctx.fill();
+      ctx.shadowBlur = 0; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r*0.4, 0, 6.283); ctx.fill();
+    });
+    ctx.restore();
+    drawPlayer();
+    parts.forEach(q => { ctx.globalAlpha = Math.max(0, q.life / q.max); ctx.fillStyle = q.color; ctx.fillRect(q.x-2, q.y-2, 4, 4); });
+    ctx.globalAlpha = 1;
+    toasts.forEach(t => {
+      ctx.save(); ctx.globalAlpha = Math.min(1, t.life/400); ctx.textAlign = 'center';
+      ctx.font = 'bold 20px Tahoma'; ctx.fillStyle = t.color; ctx.shadowColor = t.color; ctx.shadowBlur = 10;
+      ctx.fillText(t.text, t.x, t.y - 20); ctx.restore();
+    });
+    drawHUD();
+  }
+  ctx.restore();
+  if(flash > 0){ ctx.fillStyle = `rgba(255,255,255,${flash*0.6})`; ctx.fillRect(0, 0, W, H); }
+}
+
+/* ตัวอย่างยานในห้องแต่งยาน */
+function drawPreview(){
+  const c = pvx, w = pv.width, h = pv.height, t = performance.now();
+  c.fillStyle = '#05061a'; c.fillRect(0, 0, w, h);
+  c.save(); c.globalAlpha = 0.15; c.strokeStyle = '#00f0ff';
+  const off = (t*0.05) % 20;
+  for(let y = off; y < h; y += 20){ c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+  for(let x = 0; x < w; x += 20){ c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+  c.restore();
+  const sx = w/2 + Math.sin(t/900)*40, sy = h - 32;
+  const ph = (t*0.14) % 34;
+  c.save(); glowC(c, labShip.bullet, 10); c.fillStyle = labShip.bullet;
+  shotPattern(labShip.shots).forEach(g => {
+    for(let i = 0; i < 4; i++){
+      const dy = ph + i*34; c.fillRect(sx + g.ox + g.vx*dy/10 - 2, sy - 16 - dy, 4, 12);
+    }
+  });
+  c.restore();
+  paintShip(c, sx, sy, labShip, 0);
+  c.textAlign = 'left';
+  c.fillStyle = '#9dff00'; c.font = 'bold 18px Tahoma'; c.fillText(labShip.name, 8, 22);
+  c.fillStyle = '#8fb7d6'; c.font = '13px Tahoma'; c.fillText(labShip.slogan, 8, 40);
+  c.fillStyle = '#ff4d8d'; c.font = 'bold 16px Tahoma'; c.fillText('♥'.repeat(labShip.lives), 8, 62);
+}
+
+function loop(t){
+  const dt = Math.min(40, t - last || 16); last = t;
+  if(state === 'lab') drawPreview();
+  else { update(dt); draw(); }
+  requestAnimationFrame(loop);
+}
+refreshHome();
+show('home');
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
